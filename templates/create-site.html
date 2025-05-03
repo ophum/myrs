@@ -1,0 +1,26 @@
+{{ define "create-site" }}
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="utf-8" />
+    <title>myrs</title>
+</head>
+
+<body>
+    <h1>MyRS</h1>
+
+    <form action="/create-site" method="POST">
+        <input type="hidden" name="_csrf" value="{{ .CSRF }}" />
+        サイト名: <input type="text" name="site_name" />.example.com
+        <br>
+        パスワード: <input type="password" name="password" />
+        <br>
+        パスワード: <input type="password" name="repassword" />
+        <br>
+        <button type="submit">作成する</button>
+    </form>
+</body>
+
+</html>
+{{ end }}

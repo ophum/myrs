@@ -1,0 +1,36 @@
+{{ define "index" }}
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="utf-8" />
+    <title>myrs</title>
+</head>
+
+<body>
+    <h1>MyRS</h1>
+
+    {{ if .IsLogin}}
+    <form action="/sign-out" method="POST">
+        <input type="hidden" name="_csrf" value="{{ .CSRF }}" />
+        <button type="submit">ログアウト</button>
+    </form>
+
+    {{ .Site.Name }}.example.com
+
+    {{ else }}
+    ログインまたは<a href="/create-site">サイトを作成する</a>
+    <form action="/sign-in" method="POST">
+        <input type="hidden" name="_csrf" value="{{ .CSRF }}" />
+        サイト名: <input type="text" name="site_name" />.example.com
+        <br>
+        パスワード: <input type="password" name="password" />
+        <br>
+        <button type="submit">ログイン</button>
+    </form>
+</body>
+
+{{ end }}
+
+</html>
+{{ end }}
