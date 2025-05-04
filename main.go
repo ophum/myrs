@@ -1,6 +1,7 @@
 package main
 
 import (
+	"embed"
 	_ "embed"
 	"errors"
 	"html/template"
@@ -36,6 +37,9 @@ var phpFPMPoolConfTempl string
 //go:embed nginx-site.conf.tmpl
 var nginxSiteConfTempl string
 
+//go:embed templates/*html
+var templatesFS embed.FS
+
 func main() {
 	if err := run(); err != nil {
 		panic(err)
@@ -58,8 +62,9 @@ func run() error {
 	if err != nil {
 		return err
 	}
+
 	t := &Template{
-		templates: template.Must(template.ParseGlob("templates/*.html")),
+		templates: template.Must(template.ParseFS(templatesFS, "templates/*.html")),
 	}
 	e := echo.New()
 	e.Renderer = t
