@@ -11,12 +11,35 @@
     <h1>MyRS</h1>
 
     {{ if .IsLogin}}
+    {{ .Site.Name }}.example.com
     <form action="/sign-out" method="POST">
         <input type="hidden" name="_csrf" value="{{ .CSRF }}" />
         <button type="submit">ログアウト</button>
     </form>
 
-    {{ .Site.Name }}.example.com
+    <form action="/create-deploy" method="POST">
+        <input type="hidden" name="_csrf" value="{{ .CSRF }}" />
+        <button type="submit">デプロイを作成する</button>
+    </form>
+    ActiveDeployID: {{ .ActiveDeployID }}
+    <table border=1>
+        <tbody>
+            {{ range .Site.Deploys }}
+            <tr>
+                <td>{{ .Revision }}</td>
+                <td>{{ .CreatedAt }}</td>
+                <td>{{ if eq .ID $.ActiveDeployID }}Active{{ end }}</td>
+                <td>
+                    <form action="/active-deploy" method="POST">
+                        <input type="hidden" name="_csrf" value="{{ $.CSRF }}" />
+                        <input type="hidden" name="deploy_id" value="{{ .ID }}" />
+                        <button type="submit">有効にする</button>
+                    </form>
+                </td>
+            </tr>
+            {{ end }}
+        </tbody>
+    </table>
 
     {{ else }}
     ログインまたは<a href="/create-site">サイトを作成する</a>

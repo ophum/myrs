@@ -5,6 +5,7 @@ import (
 	"errors"
 	"html/template"
 	"io"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -13,6 +14,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/go-git/go-git/v5"
 	"github.com/gorilla/sessions"
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
@@ -46,13 +48,16 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	db.AutoMigrate(&Site{})
+	db.AutoMigrate(&Site{}, &Deploy{})
 
 	phpFPMPoolConfTemplate, err = template.New("").Parse(phpFPMPoolConfTempl)
 	if err != nil {
 		return err
 	}
 	nginxSiteConfTemplate, err = template.New("").Parse(nginxSiteConfTempl)
+	if err != nil {
+		return err
+	}
 	t := &Template{
 		templates: template.Must(template.ParseGlob("templates/*.html")),
 	}
@@ -67,6 +72,8 @@ func run() error {
 	e.GET("/", index)
 	e.GET("/create-site", getCreateSite)
 	e.POST("/create-site", postCreateSite)
+	e.POST("/create-deploy", postCreateDeploy)
+	e.POST("/active-deploy", postActiveDeploy)
 	e.POST("/sign-in", postSignIn)
 	e.POST("/sign-out", postSignOut)
 
@@ -129,16 +136,21 @@ func index(c echo.Context) error {
 	isLogin := err == nil
 	var site Site
 	if isLogin {
-		if err := db.Where("id = ?", siteID).First(&site).Error; err != nil {
+		if err := db.Preload("Deploys", func(db *gorm.DB) *gorm.DB {
+			return db.Order("id DESC")
+		}).
+			Where("id = ?", siteID).
+			First(&site).Error; err != nil {
 			return err
 		}
 	}
 
 	return c.Render(200, "index", map[string]any{
-		"CSRF":    getCSRF(c),
-		"IsLogin": isLogin,
-		"SiteID":  siteID,
-		"Site":    site,
+		"CSRF":           getCSRF(c),
+		"IsLogin":        isLogin,
+		"SiteID":         siteID,
+		"Site":           site,
+		"ActiveDeployID": site.ActiveDeployID,
 	})
 }
 
@@ -152,12 +164,25 @@ type CreateSiteForm struct {
 	SiteName   string `form:"site_name"`
 	Password   string `form:"password"`
 	RePassword string `form:"repassword"`
+	RepoURL    string `form:"repo_url"`
+	Path       string `form:"path"`
+}
+
+type Deploy struct {
+	gorm.Model
+	Revision string
+	SiteID   uint
+	Site     *Site
 }
 
 type Site struct {
 	gorm.Model
-	Name         string
-	PasswordHash string
+	Name           string
+	PasswordHash   string
+	RepoURL        string
+	Path           string
+	ActiveDeployID uint
+	Deploys        []*Deploy
 }
 
 func postCreateSite(c echo.Context) error {
@@ -185,6 +210,8 @@ func postCreateSite(c echo.Context) error {
 	site := Site{
 		Name:         formData.SiteName,
 		PasswordHash: string(passwordHash),
+		RepoURL:      formData.RepoURL,
+		Path:         formData.Path,
 	}
 	rollbackFuncs := []func() error{}
 	if err := db.Transaction(func(tx *gorm.DB) error {
@@ -228,16 +255,16 @@ func postCreateSite(c echo.Context) error {
 			return err
 		}
 		homePath := filepath.Join("/home", site.Name)
-		wwwPath := filepath.Join(homePath, "www")
-		if err := os.Mkdir(wwwPath, os.ModePerm); err != nil {
-			return err
-		}
+		//wwwPath := filepath.Join(homePath, "www")
+		//if err := os.Mkdir(wwwPath, os.ModePerm); err != nil {
+		//	return err
+		//}
 		if err := os.Chown(homePath, int(uid), wwwDataGID); err != nil {
 			return err
 		}
-		if err := os.Chown(wwwPath, int(uid), wwwDataGID); err != nil {
-			return err
-		}
+		//if err := os.Chown(wwwPath, int(uid), wwwDataGID); err != nil {
+		//	return err
+		//}
 
 		poolConfFilePath := filepath.Join("/etc/php/8.3/fpm/pool.d/", site.Name+".conf")
 		if err := internal.WriteFile(poolConfFilePath, func(w io.Writer) error {
@@ -354,6 +381,156 @@ func postSignIn(c echo.Context) error {
 
 func postSignOut(c echo.Context) error {
 	if err := deleteSession(c); err != nil {
+		return err
+	}
+	return c.Redirect(http.StatusFound, "/")
+}
+
+func postCreateDeploy(c echo.Context) error {
+	sess, err := getSession(c)
+	if err != nil {
+		return err
+	}
+	siteID, err := getSiteIDFromSession(sess)
+	if err != nil {
+		return err
+	}
+	if err := db.Transaction(func(tx *gorm.DB) error {
+		var site Site
+		if err := tx.Where("id = ?", siteID).First(&site).Error; err != nil {
+			return err
+		}
+
+		deploy := Deploy{
+			SiteID: site.ID,
+		}
+		if err := tx.Create(&deploy).Error; err != nil {
+			return err
+		}
+
+		tmpPath := filepath.Join(
+			os.TempDir(),
+			site.Name,
+			strconv.FormatUint(uint64(deploy.ID), 10),
+		)
+		repo, err := git.PlainClone(tmpPath, false, &git.CloneOptions{
+			URL: site.RepoURL,
+		})
+		if err != nil {
+			return err
+		}
+
+		head, err := repo.Head()
+		if err != nil {
+			return err
+		}
+		deploy.Revision = head.Hash().String()
+		if err := tx.Where("id = ?", deploy.ID).Updates(&deploy).Error; err != nil {
+			return err
+		}
+
+		srcPath := filepath.Join(tmpPath, "www", site.Path)
+		dstPath := filepath.Join("/home", site.Name, "deploys", strconv.FormatUint(uint64(deploy.ID), 10))
+		deploysDir := filepath.Join("/home", site.Name, "/deploys")
+		if err := os.MkdirAll(deploysDir, os.ModePerm); err != nil {
+			return err
+		}
+		if err := os.Rename(srcPath, dstPath); err != nil {
+			return err
+		}
+		if err := os.RemoveAll(tmpPath); err != nil {
+			return err
+		}
+
+		siteUser, err := user.Lookup(site.Name)
+		if err != nil {
+			return err
+		}
+		uid, err := strconv.Atoi(siteUser.Uid)
+		if err != nil {
+			return err
+		}
+		wwwDataGroup, err := user.LookupGroup("www-data")
+		if err != nil {
+			return err
+		}
+		gid, err := strconv.Atoi(wwwDataGroup.Gid)
+		if err != nil {
+			return err
+		}
+		if err := filepath.Walk(deploysDir, func(path string, info fs.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if err := os.Chown(path, uid, gid); err != nil {
+				return err
+			}
+			return nil
+		}); err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	return c.Redirect(http.StatusFound, "/")
+}
+
+type ActiveDeployForm struct {
+	DeployID uint `form:"deploy_id"`
+}
+
+func postActiveDeploy(c echo.Context) error {
+	var formData ActiveDeployForm
+	if err := c.Bind(&formData); err != nil {
+		return err
+	}
+
+	sess, err := getSession(c)
+	if err != nil {
+		return err
+	}
+	siteID, err := getSiteIDFromSession(sess)
+	if err != nil {
+		return err
+	}
+
+	if err := db.Transaction(func(tx *gorm.DB) error {
+		var site Site
+		if err := tx.Clauses(clause.Locking{
+			Strength: "UPDATE",
+		}).
+			Where("id = ?", siteID).First(&site).Error; err != nil {
+			return err
+		}
+
+		var deploy Deploy
+		if err := tx.Where("id = ? AND site_id = ?", formData.DeployID, site.ID).
+			First(&deploy).Error; err != nil {
+			return err
+		}
+
+		site.ActiveDeployID = formData.DeployID
+		if err := tx.Where("id = ?", site.ID).Updates(&site).Error; err != nil {
+			return err
+		}
+		deployIDStr := strconv.FormatUint(uint64(deploy.ID), 10)
+		wwwPath := filepath.Join("/home", site.Name, "www")
+		tmpWww := wwwPath + ".tmp"
+		if err := os.Symlink(
+			filepath.Join("./deploys/", deployIDStr),
+			tmpWww,
+		); err != nil {
+			return err
+		}
+
+		if err := os.Rename(tmpWww, wwwPath); err != nil {
+			return err
+		}
+
+		return nil
+	}); err != nil {
 		return err
 	}
 	return c.Redirect(http.StatusFound, "/")
