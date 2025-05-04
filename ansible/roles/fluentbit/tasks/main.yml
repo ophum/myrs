@@ -1,0 +1,23 @@
+---
+- name: Add fluentbit gpg key
+  ansible.builtin.get_url:
+    url: https://packages.fluentbit.io/fluentbit.key 
+    dest: /etc/apt/keyrings/fluentbit.asc
+    mode: "0644"
+    force: true
+
+- name: Add fluentbit apt repository
+  ansible.builtin.apt_repository:
+    repo: deb [signed-by=/etc/apt/keyrings/fluentbit.asc] https://packages.fluentbit.io/ubuntu/noble noble main
+    state: present
+
+- name: Install fluent-bit
+  ansible.builtin.apt:
+    name: fluent-bit
+    update_cache: true
+
+- name: Enable and start fluent-bit
+  ansible.builtin.systemd_service:
+    name: fluent-bit.service
+    state: started
+    enabled: true

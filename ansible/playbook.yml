@@ -12,5 +12,9 @@
       tags: [php_fpm, php_fpm_install]
     - role: mysql
       tags: [mysql, mysql_install]
+    - role: fluentbit
+      tags: [fluentbit, fluentbit_install]
+    - role: fluentbit_config
+      tags: [fluentbit, fluentbit_config]
     - role: myrs
       tags: [myrs, myrs_install]
