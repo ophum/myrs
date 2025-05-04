@@ -1,0 +1,16 @@
+---
+- name: Set up myrs
+  hosts: all
+  roles: 
+    - role: firewall
+      tags: [firewall]
+    - role: nginx
+      tags: [nginx, nginx_install]
+    - role: nginx_config
+      tags: [nginx, nginx_config]
+    - role: php_fpm
+      tags: [php_fpm, php_fpm_install]
+    - role: mysql
+      tags: [mysql, mysql_install]
+    - role: myrs
+      tags: [myrs, myrs_install]

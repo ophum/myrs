@@ -1,0 +1,18 @@
+---
+- name: Install myrs binary
+  ansible.builtin.copy:
+    src: myrs
+    dest: /usr/local/bin/myrs
+    owner: root
+    group: root
+    mode: "0700"
+  notify: Restart myrs
+
+- name: Create /etc/systemd/system/myrs.service
+  ansible.builtin.copy:
+    src: myrs.service
+    dest: /etc/systemd/system/myrs.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart myrs

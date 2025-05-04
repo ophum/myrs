@@ -1,0 +1,12 @@
+---
+- name: Allow source cidr
+  community.general.ufw:
+    rule: allow
+    src: "{{ item }}"
+  with_items: "{{ allow_cidrs }}"
+
+- name: Drop everything and enable UFW
+  community.general.ufw:
+    state: enabled
+    policy: deny
+

@@ -1,0 +1,8 @@
+[Unit]
+Description=myrs hobby rental server implements
+
+[Service]
+ExecStart=/usr/local/bin/myrs
+
+[Install]
+WantedBy=multi-user.target

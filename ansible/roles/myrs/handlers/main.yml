@@ -1,0 +1,6 @@
+---
+- name: Restart myrs
+  ansible.builtin.systemd_service:
+    name: myrs.service
+    daemon_reload: true
+    state: restarted

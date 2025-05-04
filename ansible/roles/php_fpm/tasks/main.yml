@@ -1,0 +1,9 @@
+---
+- name: Install php8.3-fpm
+  ansible.builtin.apt:
+    pkg:
+      - php8.3
+      - php8.3-mbstring
+      - php8.3-mysql
+      - php8.3-fpm
+    update_cache: true

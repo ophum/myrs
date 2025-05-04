@@ -1,0 +1,5 @@
+---
+- name: Install mysql-server-8.0
+  ansible.builtin.apt:
+    name: mysql-server-8.0
+    update_cache: true
