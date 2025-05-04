@@ -119,3 +119,13 @@ permalinkがデフォルトで基本なのでいったん考慮しない。
 
 
 
+## git deploy機能
+
+ファイルアップロード機能作るの面倒なのでgit pullしてデプロイする機能を作る
+
+- gitURL, tag, deployKeyを管理する
+- git archiveでtar.gzでDownloadし、`~/deploys/{tag}/` に展開しシンボリックリンクを作成する (シンボリックリンクは `~/www -> ../deploys/{tag}`)
+    - git archiveでremote(github)から取得するのはできないっぽいのでgit cloneして wwwディレクトリをコピーするという仕様にする
+    - cloneしてarchiveして.gitを含まないというようにでもできるけど、ほかにも公開されたくないファイル含まれてることあることを考えると明示的に公開ディレクトリを決めておくのがよい気がした。
+
+
