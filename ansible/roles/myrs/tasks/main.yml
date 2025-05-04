@@ -9,8 +9,8 @@
   notify: Restart myrs
 
 - name: Create /etc/systemd/system/myrs.service
-  ansible.builtin.copy:
-    src: myrs.service
+  ansible.builtin.template:
+    src: myrs.service.j2
     dest: /etc/systemd/system/myrs.service
     owner: root
     group: root

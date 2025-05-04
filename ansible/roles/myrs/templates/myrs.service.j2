@@ -2,7 +2,7 @@
 Description=myrs hobby rental server implements
 
 [Service]
-ExecStart=/usr/local/bin/myrs
+ExecStart=/usr/local/bin/myrs -site-domain {{ site_domain }}
 
 [Install]
 WantedBy=multi-user.target

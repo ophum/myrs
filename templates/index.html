@@ -11,7 +11,7 @@
     <h1>MyRS</h1>
 
     {{ if .IsLogin}}
-    {{ .Site.Name }}.example.com
+    <a href="http://{{ .Site.Name }}.{{ .SiteDomain }}" target="_blank">http://{{ .Site.Name }}.{{ .SiteDomain }}</a>
     <form action="/sign-out" method="POST">
         <input type="hidden" name="_csrf" value="{{ .CSRF }}" />
         <button type="submit">ログアウト</button>
@@ -45,7 +45,7 @@
     ログインまたは<a href="/create-site">サイトを作成する</a>
     <form action="/sign-in" method="POST">
         <input type="hidden" name="_csrf" value="{{ .CSRF }}" />
-        サイト名: <input type="text" name="site_name" />.example.com
+        サイト名: <input type="text" name="site_name" />.{{ .SiteDomain }}
         <br>
         パスワード: <input type="password" name="password" />
         <br>

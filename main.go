@@ -4,6 +4,7 @@ import (
 	"embed"
 	_ "embed"
 	"errors"
+	"flag"
 	"html/template"
 	"io"
 	"io/fs"
@@ -40,7 +41,12 @@ var nginxSiteConfTempl string
 //go:embed templates/*html
 var templatesFS embed.FS
 
+var siteDomain string
+
 func main() {
+	flag.StringVar(&siteDomain, "site-domain", "example.com", "site domain")
+	flag.Parse()
+
 	if err := run(); err != nil {
 		panic(err)
 	}
@@ -156,12 +162,14 @@ func index(c echo.Context) error {
 		"SiteID":         siteID,
 		"Site":           site,
 		"ActiveDeployID": site.ActiveDeployID,
+		"SiteDomain":     siteDomain,
 	})
 }
 
 func getCreateSite(c echo.Context) error {
 	return c.Render(200, "create-site", map[string]any{
-		"CSRF": getCSRF(c),
+		"CSRF":       getCSRF(c),
+		"SiteDomain": siteDomain,
 	})
 }
 
