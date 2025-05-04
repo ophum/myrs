@@ -285,7 +285,6 @@ func postCreateSite(c echo.Context) error {
 			log.Println("rollback create database", site.Name)
 			return internal.DropDatabase(site.Name)
 		})
-		return errors.New("wazato")
 		if err := internal.CreateDatabaseUser(site.Name); err != nil {
 			return err
 		}
