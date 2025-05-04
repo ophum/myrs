@@ -41,6 +41,38 @@
         </tbody>
     </table>
 
+    <h2>Logs</h2>
+
+    <table border=1>
+        <thead>
+            <tr>
+                <th>Time</th>
+                <th>RemoteAddr</th>
+                <th>Method</th>
+                <th>Path</th>
+                <th>Protocol</th>
+                <th>BodyBytesSent</th>
+                <th>ResponseTime</th>
+                <th>UserAgent</th>
+                <th>Referer</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{ range .Logs }}
+            <tr>
+                <td>{{ .Time }}</td>
+                <td>{{ .RemoteAddr }}</td>
+                <td>{{ .Method }}</td>
+                <td>{{ .Path }}</td>
+                <td>{{ .Protocol }}</td>
+                <td>{{ .BodyBytesSent }}</td>
+                <td>{{ .RequestTime }}</td>
+                <td>{{ .UserAgent }}</td>
+                <td>{{ .Referer}}</td>
+            </tr>
+            {{ end }}
+        </tbody>
+    </table>
     {{ else }}
     ログインまたは<a href="/create-site">サイトを作成する</a>
     <form action="/sign-in" method="POST">

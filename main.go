@@ -29,6 +29,7 @@ import (
 )
 
 var db *gorm.DB
+var logStorage *internal.SiteLogStorage
 var phpFPMPoolConfTemplate *template.Template
 var nginxSiteConfTemplate *template.Template
 
@@ -59,6 +60,11 @@ func run() error {
 		return err
 	}
 	db.AutoMigrate(&Site{}, &Deploy{})
+	logStorage, err = internal.NewSiteLogStorage()
+	if err != nil {
+		return err
+	}
+	defer logStorage.Close()
 
 	phpFPMPoolConfTemplate, err = template.New("").Parse(phpFPMPoolConfTempl)
 	if err != nil {
@@ -75,9 +81,13 @@ func run() error {
 	e := echo.New()
 	e.Renderer = t
 	e.Use(middleware.Logger(), middleware.Recover())
+
 	e.Use(session.Middleware(sessions.NewFilesystemStore("", []byte("secret"))))
 	csrfConfig := middleware.DefaultCSRFConfig
 	csrfConfig.TokenLookup = "form:_csrf"
+	csrfConfig.Skipper = func(c echo.Context) bool {
+		return c.Path() == "/fluentbit"
+	}
 	e.Use(middleware.CSRFWithConfig(csrfConfig))
 
 	e.GET("/", index)
@@ -87,6 +97,7 @@ func run() error {
 	e.POST("/active-deploy", postActiveDeploy)
 	e.POST("/sign-in", postSignIn)
 	e.POST("/sign-out", postSignOut)
+	e.POST("/fluentbit", logStorage.FluentbitHandler)
 
 	if err := e.Start(":8080"); err != nil {
 		return err
@@ -146,12 +157,18 @@ func index(c echo.Context) error {
 	siteID, err := getSiteIDFromSession(sess)
 	isLogin := err == nil
 	var site Site
+	var logs []*internal.NginxLog
 	if isLogin {
 		if err := db.Preload("Deploys", func(db *gorm.DB) *gorm.DB {
 			return db.Order("id DESC")
 		}).
 			Where("id = ?", siteID).
 			First(&site).Error; err != nil {
+			return err
+		}
+
+		logs, err = logStorage.GetLogs(site.Name + "." + siteDomain)
+		if err != nil {
 			return err
 		}
 	}
@@ -163,6 +180,7 @@ func index(c echo.Context) error {
 		"Site":           site,
 		"ActiveDeployID": site.ActiveDeployID,
 		"SiteDomain":     siteDomain,
+		"Logs":           logs,
 	})
 }
 
