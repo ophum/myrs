@@ -223,3 +223,48 @@ func (s *SiteLogStorage) GetLogs(host string) ([]*NginxLog, error) {
 	}
 	return nginxLogs, nil
 }
+
+type SummaryMinutelyRequestCountDataPoint struct {
+	Time         ClickHouseTime
+	RequestCount int
+}
+
+func (s *SiteLogStorage) GetMinutelyRequestCount(host string) ([]time.Time, []int, error) {
+	until := time.Now().Truncate(time.Minute)
+	from := until.Add(-time.Hour)
+	layout := "2006-01-02 15:04:05"
+	res, err := s.session.Query(
+		fmt.Sprintf("SELECT toStartOfMinute(Time) as Time, COUNT(*) as RequestCount FROM myrs.logs WHERE Host = '%s' AND Time >= '%s' AND Time <= '%s' GROUP BY Time ORDER BY Time ASC",
+			host,
+			from.Format(layout),
+			until.Format(layout),
+		),
+		"JSON",
+	)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var result map[string]json.RawMessage
+	if err := json.Unmarshal(res.Buf(), &result); err != nil {
+		return nil, nil, err
+	}
+	dataPoints := []*SummaryMinutelyRequestCountDataPoint{}
+	if err := json.Unmarshal(result["data"], &dataPoints); err != nil {
+		return nil, nil, err
+	}
+
+	times := []time.Time{}
+	requestCounts := []int{}
+	i := 0
+	for t := from; t.Compare(until) <= 0; t = t.Add(time.Minute) {
+		times = append(times, t)
+		var requestCount int
+		if i < len(dataPoints) && t.Equal(dataPoints[i].Time.Time) {
+			requestCount = dataPoints[i].RequestCount
+			i++
+		}
+		requestCounts = append(requestCounts, requestCount)
+	}
+	return times, requestCounts, nil
+}

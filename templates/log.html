@@ -21,6 +21,9 @@
             <a class="button" href="/">戻る</a>
         </div>
 
+        <div style="position: relative; height:250px">
+            <canvas id="myChart"></canvas>
+        </div>
 
         <div class="table-container">
             <table class="table is-striped is-narrow is-hoverable is-fullwidth">
@@ -37,7 +40,7 @@
                 <tbody>
                     {{ range .Logs }}
                     <tr>
-                        <td style="white-space: nowrap;" rowspan="2">{{ .Time }}</td>
+                        <td style="white-space: nowrap; vertical-align: middle;" rowspan="2">{{ .Time }}</td>
                         <td>
                             <span class="tag {{ statusTagColor .Status }}">{{ .Status }}</span>
                         </td>
@@ -60,6 +63,41 @@
             </table>
         </div>
     </main>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        const ctx = document.getElementById('myChart');
+        fetch("/api/minutely-request-counts").then((res) => {
+            return res.json()
+        }).then((res) => {
+            const labels = res.Times.map((t) => {
+                const d = new Date(t)
+                return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()} ${d.getHours()}:${d.getMinutes()}`
+            })
+            const dataPoints = res.RequestCounts
+            console.log(labels)
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: "Requests per Minute",
+                        data: dataPoints,
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        })
+    </script>
 </body>
 
 

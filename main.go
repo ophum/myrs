@@ -115,6 +115,7 @@ func run() error {
 	e.POST("/sign-out", postSignOut)
 	e.POST("/fluentbit", logStorage.FluentbitHandler)
 	e.GET("/log", getLog)
+	e.GET("/api/minutely-request-counts", getAPIMinutelyRequestCount)
 
 	if err := e.Start(":8080"); err != nil {
 		return err
@@ -606,5 +607,29 @@ func getLog(c echo.Context) error {
 		"Site":       site,
 		"SiteDomain": siteDomain,
 		"Logs":       logs,
+	})
+}
+
+func getAPIMinutelyRequestCount(c echo.Context) error {
+	sess, err := getSession(c)
+	if err != nil {
+		return err
+	}
+	siteID, err := getSiteIDFromSession(sess)
+	if err != nil {
+		return c.Redirect(http.StatusFound, "/")
+	}
+
+	var site Site
+	if err := db.Where("id = ?", siteID).First(&site).Error; err != nil {
+		return err
+	}
+	times, requestCounts, err := logStorage.GetMinutelyRequestCount(site.Name + "." + siteDomain)
+	if err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, map[string]any{
+		"Times":         times,
+		"RequestCounts": requestCounts,
 	})
 }
