@@ -207,7 +207,7 @@ func (s *SiteLogStorage) FluentbitHandler(c echo.Context) error {
 
 func (s *SiteLogStorage) GetLogs(host string) ([]*NginxLog, error) {
 	res, err := s.session.Query(
-		fmt.Sprintf("SELECT * FROM myrs.logs WHERE Host = '%s' ORDER BY Time DESC", host),
+		fmt.Sprintf("SELECT * FROM myrs.logs WHERE Host = '%s' ORDER BY Time DESC LIMIT 50", host),
 		"JSON",
 	)
 	if err != nil {
