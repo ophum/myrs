@@ -1,0 +1,67 @@
+{{ define "log" }}
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="utf-8" />
+    <title>myrs</title>
+</head>
+<style>
+    @import "https://cdn.jsdelivr.net/npm/bulma@1.0.4/css/bulma.min.css";
+</style>
+
+<body>
+
+    <main class="container">
+        <h1 class="title">
+            {{ .Site.Name}}.{{ .SiteDomain }} Logs
+        </h1>
+
+        <div class="buttons">
+            <a class="button" href="/">戻る</a>
+        </div>
+
+
+        <div class="table-container">
+            <table class="table is-striped is-narrow is-hoverable is-fullwidth">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Status</th>
+                        <th>Method</th>
+                        <th>Path</th>
+                        <th>BodyBytesSent</th>
+                        <th>ResponseTime</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{ range .Logs }}
+                    <tr>
+                        <td style="white-space: nowrap;" rowspan="2">{{ .Time }}</td>
+                        <td>
+                            <span class="tag {{ statusTagColor .Status }}">{{ .Status }}</span>
+                        </td>
+                        <td>{{ .Method }}</td>
+                        <td>{{ .Path }}</td>
+                        <td>{{ .BodyBytesSent }}</td>
+                        <td>{{ printf "%.3f" .RequestTime }}s</td>
+                    </tr>
+                    <tr>
+                        <td colspan="5">
+                            <span class="tag">RemoteAddr:{{ .RemoteAddr }}</span>
+                            <span class="tag">Method:{{ .Method }}</span>
+                            <span class="tag">Protocol:{{ .Protocol }}</span>
+                            <span class="tag">UserAgent:{{ .UserAgent }}</span>
+                            <span class="tag">Referer:{{ .Referer}}</span>
+                        </td>
+                    </tr>
+                    {{ end }}
+                </tbody>
+            </table>
+        </div>
+    </main>
+</body>
+
+
+</html>
+{{ end }}

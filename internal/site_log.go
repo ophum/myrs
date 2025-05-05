@@ -139,6 +139,10 @@ type ClickHouseTime struct {
 	time.Time
 }
 
+func (t ClickHouseTime) String() string {
+	return t.Format("2006-01-02 15:04:05")
+}
+
 func (t *ClickHouseTime) UnmarshalJSON(b []byte) error {
 	var v string
 	if err := json.Unmarshal(b, &v); err != nil {

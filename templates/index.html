@@ -33,6 +33,8 @@
                             <input type="hidden" name="_csrf" value="{{ .CSRF }}" />
                             <button class="button is-success" type="submit">デプロイを作成する</button>
                         </form>
+
+                        <a class="button" href="/log">Logs</a>
                     </div>
                     <table class="table">
                         <thead>
@@ -59,39 +61,6 @@
                                     </form>
                                     {{ end }}
                                 </td>
-                            </tr>
-                            {{ end }}
-                        </tbody>
-                    </table>
-
-                    <h2>Logs</h2>
-
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Time</th>
-                                <th>Attrs</th>
-                                <th>Path</th>
-                                <th>BodyBytesSent</th>
-                                <th>ResponseTime</th>
-                                <th>UserAgent</th>
-                                <th>Referer</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {{ range .Logs }}
-                            <tr>
-                                <td>{{ .Time }}</td>
-                                <td>
-                                    <span class="tag">RemoteAddr:{{ .RemoteAddr }}</span>
-                                    <span class="tag">Method:{{ .Method }}</span>
-                                    <span class="tag">Protocol:{{ .Protocol }}</span>
-                                </td>
-                                <td>{{ .Path }}</td>
-                                <td>{{ .BodyBytesSent }}</td>
-                                <td>{{ .RequestTime }}</td>
-                                <td>{{ .UserAgent }}</td>
-                                <td>{{ .Referer}}</td>
                             </tr>
                             {{ end }}
                         </tbody>

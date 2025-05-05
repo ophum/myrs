@@ -75,8 +75,24 @@ func run() error {
 		return err
 	}
 
+	funcMap := template.FuncMap{
+		"statusTagColor": func(s int) string {
+			switch s / 100 {
+			case 2:
+				return "is-success"
+			case 3:
+				return "is-info"
+			case 4:
+				return "is-warning"
+			case 5:
+				return "is-danger"
+			default:
+				return "is-light"
+			}
+		},
+	}
 	t := &Template{
-		templates: template.Must(template.ParseFS(templatesFS, "templates/*.html")),
+		templates: template.Must(template.New("").Funcs(funcMap).ParseFS(templatesFS, "templates/*.html")),
 	}
 	e := echo.New()
 	e.Renderer = t
@@ -98,6 +114,7 @@ func run() error {
 	e.POST("/sign-in", postSignIn)
 	e.POST("/sign-out", postSignOut)
 	e.POST("/fluentbit", logStorage.FluentbitHandler)
+	e.GET("/log", getLog)
 
 	if err := e.Start(":8080"); err != nil {
 		return err
@@ -565,4 +582,29 @@ func postActiveDeploy(c echo.Context) error {
 		return err
 	}
 	return c.Redirect(http.StatusFound, "/")
+}
+
+func getLog(c echo.Context) error {
+	sess, err := getSession(c)
+	if err != nil {
+		return err
+	}
+	siteID, err := getSiteIDFromSession(sess)
+	if err != nil {
+		return c.Redirect(http.StatusFound, "/")
+	}
+
+	var site Site
+	if err := db.Where("id = ?", siteID).First(&site).Error; err != nil {
+		return err
+	}
+	logs, err := logStorage.GetLogs(site.Name + "." + siteDomain)
+	if err != nil {
+		return err
+	}
+	return c.Render(http.StatusOK, "log", map[string]any{
+		"Site":       site,
+		"SiteDomain": siteDomain,
+		"Logs":       logs,
+	})
 }
