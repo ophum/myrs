@@ -6,23 +6,58 @@
     <meta charset="utf-8" />
     <title>myrs</title>
 </head>
+<style>
+    @import "https://cdn.jsdelivr.net/npm/bulma@1.0.4/css/bulma.min.css";
+</style>
 
 <body>
-    <h1>MyRS</h1>
-
-    <form action="/create-site" method="POST">
-        <input type="hidden" name="_csrf" value="{{ .CSRF }}" />
-        サイト名: <input type="text" name="site_name" />.{{ .SiteDomain }}
-        <br>
-        パスワード: <input type="password" name="password" />
-        <br>
-        パスワード: <input type="password" name="repassword" />
-        <br>
-        RepoURL: <input type="text" name="repo_url" placeholder="https://github.com/..." />/www/<input type="text"
-            name="path" placeholder="" />
-        <br>
-        <button type="submit">作成する</button>
-    </form>
+    <main class="container">
+        <section class="section is-medium">
+            <div class="card">
+                <div class="card-content">
+                    <p class="title">MYRS サイトを作成</p>
+                    <form action="/create-site" method="POST">
+                        <input type="hidden" name="_csrf" value="{{ .CSRF }}" />
+                        <div class="field">
+                            <label class="label">サイト名</label>
+                            <div class="control">
+                                <input class="input" type="text" name="site_name" />
+                            </div>
+                            <span class="help">.{{ .SiteDomain }}</span>
+                        </div>
+                        <div class="field">
+                            <label class="label">パスワード</label>
+                            <div class="control">
+                                <input class="input" type="password" name="password" />
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label class="label">パスワード(確認)</label>
+                            <div class="control">
+                                <input class="input" type="password" name="repassword" />
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label class="label">Gitリポジトリ</label>
+                            <div class="control">
+                                <input class="input" type="text" name="repo_url" placeholder="https://github.com/..." />
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label class="label">パス</label>
+                            <div class="control">
+                                <input class="input" type="text" name="path" placeholder="" />
+                            </div>
+                            <span class="help">
+                                &lt;Gitリポジトリ&gt;/www/&lt;パス&gt;
+                            </span>
+                        </div>
+                        <button class="button is-success is-fullwidth" type="submit">作成する</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </main>
 </body>
 
 </html>
