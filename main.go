@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/go-git/go-git/v5"
+	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/sessions"
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
@@ -96,6 +97,7 @@ func run() error {
 	}
 	e := echo.New()
 	e.Renderer = t
+	e.Validator = &Validator{validator: validator.New()}
 	e.Use(middleware.Logger(), middleware.Recover())
 
 	e.Use(session.Middleware(sessions.NewFilesystemStore("", []byte("secret"))))
@@ -119,6 +121,17 @@ func run() error {
 
 	if err := e.Start(":8080"); err != nil {
 		return err
+	}
+	return nil
+}
+
+type Validator struct {
+	validator *validator.Validate
+}
+
+func (v *Validator) Validate(a any) error {
+	if err := v.validator.Struct(a); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	return nil
 }
@@ -210,11 +223,11 @@ func getCreateSite(c echo.Context) error {
 }
 
 type CreateSiteForm struct {
-	SiteName   string `form:"site_name"`
-	Password   string `form:"password"`
-	RePassword string `form:"repassword"`
-	RepoURL    string `form:"repo_url"`
-	Path       string `form:"path"`
+	SiteName   string `form:"site_name" validate:"required,dns_rfc1035_label"`
+	Password   string `form:"password" validate:"required"`
+	RePassword string `form:"repassword" validate:"required"`
+	RepoURL    string `form:"repo_url" validate:"required"`
+	Path       string `form:"path" validate:"required"`
 }
 
 type Deploy struct {
@@ -237,6 +250,9 @@ type Site struct {
 func postCreateSite(c echo.Context) error {
 	var formData CreateSiteForm
 	if err := c.Bind(&formData); err != nil {
+		return err
+	}
+	if err := c.Validate(&formData); err != nil {
 		return err
 	}
 
