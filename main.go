@@ -351,7 +351,8 @@ func postCreateSite(c echo.Context) error {
 		nginxSiteConfFilePath := filepath.Join("/etc/nginx/conf.d/", site.Name+".conf")
 		if err := internal.WriteFile(nginxSiteConfFilePath, func(w io.Writer) error {
 			return nginxSiteConfTemplate.Execute(w, map[string]any{
-				"SiteName": site.Name,
+				"SiteName":   site.Name,
+				"SiteDomain": siteDomain,
 			})
 		}); err != nil {
 			return err
