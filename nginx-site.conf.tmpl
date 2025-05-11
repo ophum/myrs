@@ -7,6 +7,31 @@ server {
         index index.php index.html index.htm index.nginx-debian.html;
 
         server_name {{ .SiteName }}.{{ .SiteDomain }};
+{{ if .TLSEnabled }}
+        return 301 https://$host$request_uri;
+{{ else }}
+        location / {
+                try_files $uri $uri/ =404;
+        }
+
+        location ~ \.php$ {
+                include snippets/fastcgi-php.conf;
+                fastcgi_pass unix:/run/php/php8.3-fpm-{{ .SiteName }}.sock;
+        }
+{{ end }}
+}
+
+{{ if .TLSEnabled }}
+server {
+        listen 443 ssl;
+        root /home/{{ .SiteName }}/www;
+
+        index index.php index.html index.htm index.nginx-debian.html;
+
+        server_name {{ .SiteName }}.{{ .SiteDomain }};
+
+        ssl_certificate {{ .CertificatePath }};
+        ssl_certificate_key {{ .CertificateKeyPath }};
 
         location / {
                 try_files $uri $uri/ =404;
@@ -17,3 +42,4 @@ server {
                 fastcgi_pass unix:/run/php/php8.3-fpm-{{ .SiteName }}.sock;
         }
 }
+{{ end }}

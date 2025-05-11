@@ -2,7 +2,7 @@
 Description=myrs hobby rental server implements
 
 [Service]
-ExecStart=/usr/local/bin/myrs -site-domain {{ site_domain }}
+ExecStart=/usr/local/bin/myrs -site-domain {{ site_domain }}{% if tls_enabled %} -tls -user-cert /etc/letsencrypt/live/{{ myrs_server_name }}/fullchain.pem -user-cert-key /etc/letsencrypt/live/{{ myrs_server_name }}/privkey.pem{% endif %}
 
 [Install]
 WantedBy=multi-user.target

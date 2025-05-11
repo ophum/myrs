@@ -1,0 +1,28 @@
+server {
+    listen 80;
+    root /var/www/html;
+    server_name {{ myrs_server_name }};
+
+{% if tls_enabled %}
+    return 301 https://$host$request_uri;
+{% else %}
+    location / {
+        proxy_pass http://localhost:8080/;
+    }
+{% endif %}
+}
+
+{% if tls_enabled %}
+server {
+    listen 443 ssl;
+    root /var/www/html;
+    server_name {{ myrs_server_name }};
+
+    ssl_certificate /etc/letsencrypt/live/{{ myrs_server_name }}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/{{ myrs_server_name }}/privkey.pem;
+
+    location / {
+        proxy_pass http://localhost:8080/;
+    }
+}
+{% endif %}

@@ -44,9 +44,14 @@ var nginxSiteConfTempl string
 var templatesFS embed.FS
 
 var siteDomain string
+var tlsEnabled bool
+var wildcardCertificatePath, wildcardCertificateKeyPath string
 
 func main() {
 	flag.StringVar(&siteDomain, "site-domain", "example.com", "site domain")
+	flag.BoolVar(&tlsEnabled, "tls", false, "enable tls")
+	flag.StringVar(&wildcardCertificatePath, "user-cert", "", "certificate for user site (wildcard certificate)")
+	flag.StringVar(&wildcardCertificateKeyPath, "user-cert-key", "", "certificate key for user site (wildcard certificate)")
 	flag.Parse()
 
 	if err := run(); err != nil {
@@ -351,8 +356,11 @@ func postCreateSite(c echo.Context) error {
 		nginxSiteConfFilePath := filepath.Join("/etc/nginx/conf.d/", site.Name+".conf")
 		if err := internal.WriteFile(nginxSiteConfFilePath, func(w io.Writer) error {
 			return nginxSiteConfTemplate.Execute(w, map[string]any{
-				"SiteName":   site.Name,
-				"SiteDomain": siteDomain,
+				"SiteName":           site.Name,
+				"SiteDomain":         siteDomain,
+				"TLSEnabled":         tlsEnabled,
+				"CertificatePath":    wildcardCertificatePath,
+				"CertificateKeyPath": wildcardCertificateKeyPath,
 			})
 		}); err != nil {
 			return err

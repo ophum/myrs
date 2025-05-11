@@ -1,3 +1,4 @@
 *.db
 .venv
 tmp/
+ansible/inventory/prd/
