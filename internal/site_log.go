@@ -149,7 +149,7 @@ func (t *ClickHouseTime) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	tt, err := time.Parse("2006-01-02 15:04:05", v)
+	tt, err := time.ParseInLocation("2006-01-02 15:04:05", v, time.Local)
 	if err != nil {
 		return err
 	}
