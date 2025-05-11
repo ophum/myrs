@@ -299,7 +299,7 @@ func postCreateSite(c echo.Context) error {
 			return err
 		}
 		if exists {
-			return errors.New("already exists")
+			return echo.NewHTTPError(http.StatusConflict, "already exists")
 		}
 
 		if err := tx.Create(&site).Error; err != nil {
